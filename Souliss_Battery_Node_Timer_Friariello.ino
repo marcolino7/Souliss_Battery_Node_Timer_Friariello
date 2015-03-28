@@ -37,7 +37,15 @@ void setup(){
 	Serial.println(millis());
 	delay(250);
 
-	Souliss_SetAddress(network_address,network_my_subnet,network_my_supern);
+	//Initialize();
+
+	//Souliss_SetAddress(network_address,network_my_subnet,network_my_supern);
+	// This board request an address to the gateway at runtime, no need
+	// to configure any parameter here.
+	SetDynamicAddressing();
+	GetAddress();	
+	
+	
 	Set_AnalogIn(BATT_LEVEL);	//T55 per misurare il livello di batteria
 	HardcodedChannel(destination_node);
 	sleepInit(SLEEPMODE_TIMER);
