@@ -20,15 +20,16 @@
 ***************************************************************************/
 
 #define	VNET_DEBUG_INSKETCH
-#define VNET_DEBUG  		1
+#define VNET_DEBUG  		0
 
 #define	MaCaco_DEBUG_INSKETCH
-#define MaCaco_DEBUG  		1
+#define MaCaco_DEBUG  		0
 
 #define	SLEEPING_INSKETCH
 #define wakePin 		2
 #define	wakePinINT		0
-#define	wakeupTime		0x0004
+//#define	wakeupTime	0x0004
+#define	wakeupTime		0x00FF			// The total sleep time is wakeupTime*8 seconds
 #define	wakeupCycles	5		
 
 // Configure the framework
@@ -57,31 +58,32 @@
 
 //Variables
 float temp=0;
-float vcc_f=0;
+float vcc_f_dec=0;
 float batterycharge=0;
 
 
 void setup()
 {	
-	Serial.begin(115200);
+/*	Serial.begin(115200);
 	delay(1000);
 	Serial.print("DevDuino INIT-");
 	Serial.println(millis());
-	delay(250);
+	delay(250);*/
 
 	Initialize();
 
 	// Set an analog value to measure the battery voltage
 	Set_AnalogIn(BATT_LEVEL);
-	Set_Voltage(BATT_VOLT);
+	Set_AnalogIn(BATT_VOLT);
+	//Set_Voltage(BATT_VOLT);
 	Set_Temperature(TEMPERATURE);
 
 	// This board request an address to the gateway at runtime, no need
 	// to configure any parameter here.
 	SetDynamicAddressing();
-	Serial.println("SetDynamicAddressing");
+	//Serial.println("SetDynamicAddressing");
 	GetAddress();	
-	Serial.println("GetAddress");
+	//Serial.println("GetAddress");
 	/*****
 		The default sleep time is about 30 minutes, you can change this from the
 		base/Sleeping.h file, or using the following defines on top of the sketch
@@ -109,6 +111,8 @@ void setup()
 
 void loop()
 {   
+
+
 	// If the node wake-ups then this statement is executed
 	if(wasSleeping() || StayUp())
 	{	
@@ -127,20 +131,22 @@ void loop()
 
 				
 				getBatteryInfo();
-				Serial.print("Send Batt Level:");
-				Serial.println(batterycharge);
-				Serial.print("Send Batt voltage:");
-				Serial.println(vcc_f);
+				//Serial.print("Send Batt Level:");
+				//Serial.println(batterycharge);
+				//Serial.print("Send Batt voltage:");
+				//Serial.println(vcc_f_dec);
 								
 				ImportAnalog(BATT_LEVEL, &batterycharge);
 				Read_AnalogIn(BATT_LEVEL);
 
-				ImportAnalog(BATT_VOLT, &vcc_f);
-				Logic_Voltage(BATT_VOLT);
-				
+				//vcc_f_dec = 100;
+				ImportAnalog(BATT_VOLT, &vcc_f_dec);
+				//Logic_Voltage(BATT_VOLT);
+				Read_AnalogIn(BATT_VOLT);
+
 				getTemperature();
-				Serial.print("Send Temperature:");
-				Serial.println(temp);
+				//Serial.print("Send Temperature:");
+				//Serial.println(temp);
 
 				ImportAnalog(TEMPERATURE, &temp);
 				Logic_Temperature(TEMPERATURE);
@@ -156,8 +162,8 @@ void loop()
 					**************/
 					
 					// Sleep microcontroller and radio
-					Serial.println("Back to Sleep");
-					delay(500);
+					//Serial.println("Back to Sleep");
+					//delay(500);
 					sleepNow();
 
 					data_changed=1;
@@ -168,6 +174,7 @@ void loop()
 						- Voltage regulator,
 						- ...
 					**************/
+					SetTrigger();
 				}	
 			} 
 			
@@ -186,7 +193,7 @@ void getTemperature(){
 void getBatteryInfo(){
 	// Read the input voltage at microcontroller
 	long vcc = readVcc();
-	vcc_f = (float) vcc;
+	float vcc_f = (float) vcc;
 				
 	// Estimate the battery charge, assuming that you are powering with 2 AA
 	// alkaline
@@ -199,6 +206,7 @@ void getBatteryInfo(){
 				
 	// Get it in percentage
 	batterycharge*=100;
+	vcc_f_dec=vcc_f/1000;
 }
 
 long readVcc() {
