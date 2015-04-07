@@ -176,9 +176,11 @@ void loop()
 } 
 
 void getTemperature(){
-	temp = analogRead(0)*5/1024.0;
+	temp = analogRead(3)*5/1024.0;
 	temp = temp - 0.5;
 	temp = temp / 0.01;
+	//[°C] = ([°F] - 32) × 5/9
+	temp = (temp-32)*0.55;
 }
 
 void getBatteryInfo(){
