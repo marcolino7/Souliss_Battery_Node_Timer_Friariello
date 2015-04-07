@@ -32,7 +32,7 @@
 #define	wakeupCycles	5		
 
 // Configure the framework
-#include "bconf/DevDuino_v2.h"
+#include "bconf/DevDuino_v2.h"				//Use DevDuino Version 2 Board
 #include "conf/nRF24L01.h"
 #include "conf/Sleep.h"
 #include "conf/DynamicAddressing.h"			// Use dynamic addressing
@@ -41,11 +41,25 @@
 #include <SPI.h>
 #include "Souliss.h"
 
-#define BATT_LEVEL		0			 
-#define	STAYUP_PIN		3					// Keeps the node asleep
+//Define the SLOT
+#define BATT_LEVEL		0		//Battery Charge Left
+#define BATT_VOLT		2		//Battery Voltage
+#define TEMPERATURE		4		//Temperature
+
+//Define the PIN to keep node asleep during registration
+#define	STAYUP_PIN		3
 #define	StayUp()		digitalRead(STAYUP_PIN)
 
-#define	Read_AnalogIn(slot)	Souliss_Logic_T51(memory_map, slot, 0, &data_changed)
+//Setting Deadband to 0 to all Analog Slot
+#define	Read_AnalogIn(slot)		Souliss_Logic_T51(memory_map, slot, 0, &data_changed)
+#define	Logic_Voltage(slot)		Souliss_Logic_T55(memory_map, slot, 0, &data_changed)
+#define	Logic_Temperature(slot)	Souliss_Logic_T52(memory_map, slot, 0, &data_changed)
+
+//Variables
+float temp=0;
+float vcc_f=0;
+float batterycharge=0;
+
 
 void setup()
 {	
@@ -59,7 +73,9 @@ void setup()
 
 	// Set an analog value to measure the battery voltage
 	Set_AnalogIn(BATT_LEVEL);
-	//Souliss_SetT55(memory_map, BATT_LEVEL);
+	Set_Voltage(BATT_VOLT);
+	Set_Temperature(TEMPERATURE);
+
 	// This board request an address to the gateway at runtime, no need
 	// to configure any parameter here.
 	SetDynamicAddressing();
@@ -109,26 +125,25 @@ void loop()
 			// every 34 minutes
 			FAST_510ms() {
 
-				// Read the input voltage at microcontroller
-				long vcc = readVcc();
-				float vcc_f = (float) vcc;
 				
-				// Estimate the battery charge, assuming that you are powering with 2 AA
-				// alkaline
-				float mbatt = 3*(vcc_f/1000) - 7.5;
-				float batterycharge = 0.66 + 0.022*mbatt + (float)(0.0074*pow(mbatt,3)) + (float)(0.0088*pow(mbatt,9));
-				
-				// Cut if out of range
-				if(batterycharge > 1) batterycharge = 1;
-				if(batterycharge < 0) batterycharge = 0;
-				
-				// Get it in percentage
-				batterycharge*=100;
-				
+				getBatteryInfo();
 				Serial.print("Send Batt Level:");
+				Serial.println(batterycharge);
+				Serial.print("Send Batt voltage:");
 				Serial.println(vcc_f);
-				ImportAnalog(BATT_LEVEL, &vcc_f);
+								
+				ImportAnalog(BATT_LEVEL, &batterycharge);
 				Read_AnalogIn(BATT_LEVEL);
+
+				ImportAnalog(BATT_VOLT, &vcc_f);
+				Logic_Voltage(BATT_VOLT);
+				
+				getTemperature();
+				Serial.print("Send Temperature:");
+				Serial.println(temp);
+
+				ImportAnalog(TEMPERATURE, &temp);
+				Logic_Temperature(TEMPERATURE);
 			
 				// Back to sleep
 				if(isTimeToSleep() && !StayUp())	
@@ -159,6 +174,30 @@ void loop()
 		}
 	}	
 } 
+
+void getTemperature(){
+	temp = analogRead(0)*5/1024.0;
+	temp = temp - 0.5;
+	temp = temp / 0.01;
+}
+
+void getBatteryInfo(){
+	// Read the input voltage at microcontroller
+	long vcc = readVcc();
+	vcc_f = (float) vcc;
+				
+	// Estimate the battery charge, assuming that you are powering with 2 AA
+	// alkaline
+	float mbatt = 3*(vcc_f/1000) - 7.5;
+	batterycharge = 0.66 + 0.022*mbatt + (float)(0.0074*pow(mbatt,3)) + (float)(0.0088*pow(mbatt,9));
+				
+	// Cut if out of range
+	if(batterycharge > 1) batterycharge = 1;
+	if(batterycharge < 0) batterycharge = 0;
+				
+	// Get it in percentage
+	batterycharge*=100;
+}
 
 long readVcc() {
 	
