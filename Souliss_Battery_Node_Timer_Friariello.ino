@@ -36,11 +36,17 @@
 #include "bconf/DevDuino_v2.h"				//Use DevDuino Version 2 Board
 #include "conf/nRF24L01.h"
 #include "conf/Sleep.h"
-#include "conf/DynamicAddressing.h"			// Use dynamic addressing
+//#include "conf/DynamicAddressing.h"			// Use dynamic addressing
 
 // Include framework code and libraries
 #include <SPI.h>
 #include "Souliss.h"
+
+//Souliss Addressing
+#define network_address         0x6506        // Local address
+#define network_my_subnet       0xFF00
+#define network_my_supern       0x6501        // RF24 gateway address
+
 
 //Define the SLOT
 #define BATT_LEVEL		0		//Battery Charge Left
@@ -72,17 +78,21 @@ void setup()
 
 	Initialize();
 
+	Souliss_SetAddress(network_address,network_my_subnet,network_my_supern);
+
 	// Set an analog value to measure the battery voltage
 	Set_AnalogIn(BATT_LEVEL);
 	Set_AnalogIn(BATT_VOLT);
 	//Set_Voltage(BATT_VOLT);
 	Set_Temperature(TEMPERATURE);
 
+	WaitSubscription();
+
 	// This board request an address to the gateway at runtime, no need
 	// to configure any parameter here.
-	SetDynamicAddressing();
+	//SetDynamicAddressing();
 	//Serial.println("SetDynamicAddressing");
-	GetAddress();	
+	//GetAddress();	
 	//Serial.println("GetAddress");
 	/*****
 		The default sleep time is about 30 minutes, you can change this from the
