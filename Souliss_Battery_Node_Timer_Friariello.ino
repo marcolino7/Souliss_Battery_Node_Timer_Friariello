@@ -28,8 +28,8 @@
 #define	SLEEPING_INSKETCH
 #define wakePin 		2
 #define	wakePinINT		0
-#define	wakeupTime		0x01			// The total sleep time is wakeupTime*8 seconds
-#define	wakeupCycles	1		
+#define	wakeupTime		0x384			// 0x384 2 ore, 0xE1 30 minuti
+#define	wakeupCycles	5		
 
 // Configure the framework
 #include "bconf/DevDuino_v2.h"				//Use DevDuino Version 2 Board
@@ -68,7 +68,8 @@ void setup()
 	Souliss_SetAddress(network_address,network_my_subnet,network_my_supern);
 
 	// Set an analog value to measure the battery voltage
-	Set_AnalogIn(BATT_LEVEL);
+	//Set_AnalogIn(BATT_LEVEL);
+	Souliss_SetT52(memory_map, BATT_LEVEL);
 
 	WaitSubscription();
 
@@ -114,7 +115,9 @@ void loop()
 		- Voltage regulator,
 		- ...
 		**************/
-		Serial.println("Vado a nanna !!");
+
+		Serial.print("Vado a nanna !! ");
+		Serial.println(sleepcounter);
 		delay(250);
 		// Sleep microcontroller and radio
 		sleepNow();
@@ -130,6 +133,8 @@ void loop()
 		- ...
 		**************/
 		Serial.println("Sono sveglio !!");
+		Serial.print("millis:");
+		Serial.println(millis());
 		delay(250);
 
 		// We want send a frame once back from sleep, so we set the trigger and this
@@ -139,12 +144,17 @@ void loop()
 		// Estimate the battery charge, assuming that you are powering with 2 AA
 		// alkaline
 		//float batterycharge = batteryCharge();
-		float batterycharge = 50 + random(5, 10);
-		Serial.print("Livello Batteria:");
-		Serial.println(batterycharge);
+		//float batterycharge = 50 + random(5, 10)*10;
+		
+		long vcc = readVcc();
+		float vcc_f = (float)vcc;
+		float vcc_to_send = vcc_f / 1000;
+		
+		Serial.print("Voltaggio Batteria:");
+		Serial.println(vcc_to_send);
 		delay(250);
 
-		ImportAnalog(BATT_LEVEL, &batterycharge);
+		ImportAnalog(BATT_LEVEL, &vcc_to_send);
 		Read_AnalogIn(BATT_LEVEL);
 
 		// Here we process the communication
