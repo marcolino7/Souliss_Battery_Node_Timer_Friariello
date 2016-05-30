@@ -26,9 +26,9 @@
 #define MaCaco_DEBUG  		0
 
 #define	SLEEPING_INSKETCH
-#define wakePin 		2
-#define	wakePinINT		0
-#define	wakeupTime		0x384			// 0x384 2 ore, 0xE1 30 minuti
+#define wakePin 		3
+#define	wakePinINT		1
+#define	wakeupTime		0x0A			// 0x384 2 ore, 0xE1 30 minuti
 #define	wakeupCycles	5		
 
 // Configure the framework
@@ -48,10 +48,11 @@
 
 //Define the SLOT
 #define BATT_LEVEL		0		//Battery Charge Left
+#define TYP_T13			2		//Battery Charge Left
 
 
 //Define the PIN to keep node asleep during registration
-#define	STAYUP_PIN		3
+#define	STAYUP_PIN		5
 #define	StayUp()		digitalRead(STAYUP_PIN)
 
 
@@ -70,6 +71,7 @@ void setup()
 	// Set an analog value to measure the battery voltage
 	//Set_AnalogIn(BATT_LEVEL);
 	Souliss_SetT52(memory_map, BATT_LEVEL);
+	Souliss_SetT13(memory_map, TYP_T13);
 
 	WaitSubscription();
 
@@ -94,7 +96,7 @@ void setup()
 		node should execute isTimeToSleep() before put itself back in sleep.
 	*****/
 	
-	sleepInit(SLEEPMODE_TIMER);
+	sleepInit(SLEEPMODE_COMBO);
 	
 	// Use an external input to force the node in asleep, keep it activated till you
 	// configuration (node address and typicals) are completed and you are able to
@@ -144,18 +146,22 @@ void loop()
 		// Estimate the battery charge, assuming that you are powering with 2 AA
 		// alkaline
 		//float batterycharge = batteryCharge();
-		//float batterycharge = 50 + random(5, 10)*10;
+		float batterycharge = 50 + random(5, 10)*10;
 		
 		long vcc = readVcc();
 		float vcc_f = (float)vcc;
 		float vcc_to_send = vcc_f / 1000;
 		
 		Serial.print("Voltaggio Batteria:");
-		Serial.println(vcc_to_send);
+		Serial.println(batterycharge);
 		delay(250);
 
-		ImportAnalog(BATT_LEVEL, &vcc_to_send);
-		Read_AnalogIn(BATT_LEVEL);
+		ImportAnalog(BATT_LEVEL, &batterycharge);
+		//Read_AnalogIn(BATT_LEVEL);
+		Souliss_Logic_T52(memory_map, BATT_LEVEL, 0.00, &data_changed);
+
+		DigIn(wakePin, Souliss_T1n_OnCmd, TYP_T13);
+		//Souliss_Logic_T13(memory_map, TYP_T13, &data_changed);
 
 		// Here we process the communication
 		ProcessCommunication();
@@ -178,7 +184,7 @@ float batteryCharge()
 	if (batterycharge < 0) batterycharge = 0;
 
 	// Get it in percentage
-	batterycharge *= 100;
+	batterycharge *= 100;\
 
 	return batterycharge;
 }
